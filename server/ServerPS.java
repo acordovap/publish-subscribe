@@ -14,8 +14,6 @@ import java.security.Policy;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import clients.ClientPS;
-
 public class ServerPS implements IServerPS, Runnable{
 
 	private static final int PORT_RMI = 1099;
@@ -45,17 +43,15 @@ public class ServerPS implements IServerPS, Runnable{
 	}
 
 	@Override
-	public boolean register(IClientPS cps) throws RemoteException {
-		if (lps.getClts().contains(cps))
-			return false;
-		else {
-			synchronized(lps.getClts()){
-                lps.getClts().add((ClientPS) cps);
-			}
-		}
-		return true;
+	public boolean register(IClientPS c) throws RemoteException {
+		return lps.registerClt(c);
 	}
 
+	@Override
+	public boolean login(IClientPS c) throws RemoteException {
+		return lps.loginClt(c);
+	}
+	
 	@Override
 	public void run() {
         try {

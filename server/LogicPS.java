@@ -46,6 +46,7 @@ public class LogicPS implements Runnable {
 	public boolean logoutClt(IClientPS c) throws RemoteException {
 		activeClts.remove(c.getUuid());
 		lastUpdate.put(c.getUuid(), c.getCurrentTick());
+		Log.getLogger().info((LogicPS.class.getName() + " - client with UUID: " + c.getUuid() + " logged out"));
 		return false;
 	}
 	
@@ -77,25 +78,48 @@ public class LogicPS implements Runnable {
 		}
 	}
 	
-	public void subscribeTo(IClientPS c, String tn) throws RemoteException {
-		if (subscriptions.get(tn) == null) {
-			Topic t = new Topic(tn);
-			synchronized (topics) {
-				topics.put(tn, t);
-			}
-			subscriptions.put(tn, new HashSet<UUID>());
-			Log.getLogger().info((LogicPS.class.getName() + " - client with UUID: " + c.getUuid() + " create topic: " + tn));
-		}
-		subscriptions.get(tn).add(c.getUuid());
-		synchronized (subscriptions.get(tn)) {
-			for (UUID u: subscriptions.get(tn) ) {
+	protected void recursiveSubscribeTo(IClientPS c, String tns) throws RemoteException {
+		subscriptions.get(tns).add(c.getUuid());
+		
+		synchronized (subscriptions.get(tns)) {
+			for (UUID u: subscriptions.get(tns) ) {
 				if (activeClts.get(u) != null)
-					activeClts.get(u).notify(c, tn); //notify to users this subscription 
+					activeClts.get(u).notify(c, tns); //notify to users this subscription 
 			}
-			notifyOnSubscribe(c, tn);
+			notifyOnSubscribe(c, tns);
 		}
-		Log.getLogger().info((LogicPS.class.getName() + " - client with UUID: " + c.getUuid() + " subscribed to topic: " + tn));
-		Log.getLogger().fine(LogicPS.class.getName() + " - users subscribed to topic: " + tn + ": " +  subscriptions.get(tn).toString());
+		Log.getLogger().info((LogicPS.class.getName() + " - client with UUID: " + c.getUuid() + " subscribed to topic: " + tns));
+		Log.getLogger().fine(LogicPS.class.getName() + " - users subscribed to topic: " + tns + ": " +  subscriptions.get(tns).toString());
+		for (String st : topics.get(tns).getSubtopics()) {
+			recursiveSubscribeTo(c, st);
+		}
+	}
+	
+	public void subscribeTo(IClientPS c, String tns) throws RemoteException {
+		if (subscriptions.get(tns) != null) {
+			recursiveSubscribeTo(c, tns);
+			return;
+		}
+		
+		String []tn = tns.split(Topic.SEPARATOR);
+		String prefix = new String();
+		for (int i = 0; i < tn.length; i++) {
+			prefix = prefix+Topic.SEPARATOR+(tn[i]);
+			if (subscriptions.get(prefix) == null) {
+				Topic t = new Topic(prefix);
+				if (i+1 < tn.length) {
+					t.addSubtopic(prefix+Topic.SEPARATOR+tn[i+1]);
+				}
+				synchronized (topics) {
+					topics.put(prefix, t);
+				}
+				subscriptions.put(prefix, new HashSet<UUID>());
+				Log.getLogger().info((LogicPS.class.getName() + " - client with UUID: " + c.getUuid() + " create topic: " + prefix));
+				subscriptions.get(prefix).add(c.getUuid());
+				c.notify(c, prefix);
+				Log.getLogger().info((LogicPS.class.getName() + " - client with UUID: " + c.getUuid() + " subscribed to topic: " + prefix));
+			}
+		}
 	}
 	
 	private void notifyOnSubscribe(IClientPS c, String tn) throws RemoteException { //checar con Toño

@@ -2,6 +2,8 @@ package clients;
 
 import interfaces.IClientPS;
 import interfaces.IServerPS;
+import objects.Publication;
+import objects.Topic;
 import server.ServerPS;
 import java.io.Serializable;
 import java.rmi.NotBoundException;
@@ -14,6 +16,7 @@ public class ClientPS extends UnicastRemoteObject implements IClientPS, Serializ
 	
 	private static final long serialVersionUID = 6924681544523586806L;
 	private UUID uuid;
+	private long currentTick;
 	
 	public ClientPS() throws RemoteException {
 		super();
@@ -25,9 +28,27 @@ public class ClientPS extends UnicastRemoteObject implements IClientPS, Serializ
 		this.uuid = uuid;
 	}
 
+	public long getCurrentTick() {
+		return currentTick;
+	}
+
+	public void setCurrentTick(long currentTick) {
+		this.currentTick = currentTick;
+	}
+
+	
+
 	@Override
-	public void ntfy() throws RemoteException {
-		System.out.println("Hi");
+	public void notify(IClientPS c, Topic t) throws RemoteException {
+		System.out.println("Client with UUID: " + c.getUuid() + " subscribed to topic: " + t.getTopicName());
+	}
+	
+	@Override
+	public void notify(Publication p, Topic t) throws RemoteException {
+		if (p.getTick() > getCurrentTick()) {
+			setCurrentTick(p.getTick());
+			System.out.println("New publication on topic: " + t.getTopicName() + " from UUID:" + p.getUuidPublisher() + "\n\t" + p.getMsg());
+		}
 	}
 
 	@Override
@@ -42,6 +63,8 @@ public class ClientPS extends UnicastRemoteObject implements IClientPS, Serializ
         
         server.register(c);
         server.login(c);
+        server.subscribe(c, "test");
+        //server.publish();
         while (true) {
         	
         }

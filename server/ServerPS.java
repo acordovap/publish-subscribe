@@ -31,9 +31,8 @@ public class ServerPS implements IServerPS, Runnable{
 	}
 
 	@Override
-	public void subscribe() throws RemoteException {
-		// TODO Auto-generated method stub
-		
+	public void subscribe(IClientPS c, String tn) throws RemoteException {
+		lps.subscribeTo(c, tn);
 	}
 
 	@Override

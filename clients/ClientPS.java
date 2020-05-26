@@ -3,7 +3,6 @@ package clients;
 import interfaces.IClientPS;
 import interfaces.IServerPS;
 import objects.Publication;
-import objects.Topic;
 import server.ServerPS;
 import java.io.Serializable;
 import java.rmi.NotBoundException;
@@ -20,11 +19,13 @@ public class ClientPS extends UnicastRemoteObject implements IClientPS, Serializ
 	
 	public ClientPS() throws RemoteException {
 		super();
+		currentTick = 0;
 		uuid = UUID.randomUUID();
 	}
 
 	public ClientPS(UUID uuid) throws RemoteException {
 		super();
+		currentTick = 0;
 		this.uuid = uuid;
 	}
 
@@ -39,15 +40,15 @@ public class ClientPS extends UnicastRemoteObject implements IClientPS, Serializ
 	
 
 	@Override
-	public void notify(IClientPS c, Topic t) throws RemoteException {
-		System.out.println("Client with UUID: " + c.getUuid() + " subscribed to topic: " + t.getTopicName());
+	public void notify(IClientPS c, String tn) throws RemoteException {
+		System.out.println("Client with UUID: " + c.getUuid() + " subscribed to topic: " + tn);
 	}
 	
 	@Override
-	public void notify(Publication p, Topic t) throws RemoteException {
+	public void notify(Publication p, String tn) throws RemoteException {
 		if (p.getTick() > getCurrentTick()) {
 			setCurrentTick(p.getTick());
-			System.out.println("New publication on topic: " + t.getTopicName() + " from UUID:" + p.getUuidPublisher() + "\n\t" + p.getMsg());
+			System.out.println("New publication on topic: " + tn + " from UUID:" + p.getUuidPublisher() + "\n\t" + p.getMsg());
 		}
 	}
 
@@ -57,14 +58,28 @@ public class ClientPS extends UnicastRemoteObject implements IClientPS, Serializ
 	}
 	
 	public static void main(String[] args) throws RemoteException, NotBoundException {
-		ClientPS c = new ClientPS();
+		ClientPS c1 = new ClientPS();
+		ClientPS c2 = new ClientPS();
+		
         String saddress = "127.0.0.1"; // server's ip address
         IServerPS server = (IServerPS) LocateRegistry.getRegistry(saddress).lookup( ServerPS.class.getName());
         
-        server.register(c);
-        server.login(c);
-        server.subscribe(c, "test");
-        //server.publish();
+        server.register(c1);
+        server.login(c1);
+        server.subscribe(c1, "topic1");
+        server.publish(c1, "msg1", "topic1");
+        server.logout(c1);
+        
+        server.register(c2);
+        server.login(c2);
+        server.subscribe(c2, "topic1");
+        server.publish(c2, "msg2", "topic1");
+        
+        server.login(c1);
+        
+        
+        
+        
         while (true) {
         	
         }

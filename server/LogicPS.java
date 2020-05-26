@@ -16,15 +16,15 @@ public class LogicPS implements Runnable {
 	private CountDownLatch latch;
 	private Map<UUID, IClientPS> activeClts;
 	private Map<UUID, String> registeredClts;
-	private Map<String, Set<UUID>> topicClts;
+	private Map<String, Set<UUID>> subscriptions;
 	private Map<String, Topic> topics;
-	private Map<UUID, Long> lastPublication;
+	private Map<UUID, Long> lastUpdate;
 
 	public LogicPS(CountDownLatch l) {
 		this.latch = l;
-		lastPublication = Collections.synchronizedMap(new HashMap<>());
+		lastUpdate = Collections.synchronizedMap(new HashMap<>());
 		topics = Collections.synchronizedMap(new HashMap<>());
-		topicClts = Collections.synchronizedMap(new HashMap<>());
+		subscriptions = Collections.synchronizedMap(new HashMap<>());
 		activeClts = Collections.synchronizedMap(new HashMap<>());
 		registeredClts = Collections.synchronizedMap(new HashMap<>());
 	}
@@ -43,19 +43,25 @@ public class LogicPS implements Runnable {
 		return false;
 	}
 
+	public boolean logoutClt(IClientPS c) throws RemoteException {
+		activeClts.remove(c.getUuid());
+		lastUpdate.put(c.getUuid(), c.getCurrentTick());
+		return false;
+	}
+	
 	private void updateClientN(IClientPS c) throws RemoteException {
-		if (lastPublication.get(c.getUuid()) != null ) {
-			long l = lastPublication.get(c.getUuid());
-			long maxTick = lastPublication.get(c.getUuid());
+		if (lastUpdate.get(c.getUuid()) != null ) {
+			long l = lastUpdate.get(c.getUuid());
+			long maxTick = lastUpdate.get(c.getUuid());
 			synchronized (topics.values()) {
 				for (Topic t: topics.values()) {
 					synchronized (t) {
-						if(topicClts.get(t.getTopicName()).contains(c.getUuid())) { //check if client is subscribed to topic
+						if(subscriptions.get(t.getTopicName()).contains(c.getUuid())) { //check if client is subscribed to topic
 							synchronized (t.getPubs()) { 
 								for(Publication p: t.getPubs()) {
 									synchronized (p) {
 										if(p.getTick() > l) {
-											c.notify(p, t);
+											c.notify(p, t.getTopicName());
 											maxTick = Math.max(maxTick, p.getTick());
 										}
 									}
@@ -65,35 +71,36 @@ public class LogicPS implements Runnable {
 					}
 				}
 			}
-			synchronized (lastPublication) {
-				lastPublication.put(c.getUuid(), maxTick);
+			synchronized (lastUpdate) {
+				lastUpdate.put(c.getUuid(), maxTick);
 			}
 		}
 	}
 	
 	public void subscribeTo(IClientPS c, String tn) throws RemoteException {
-		if (topicClts.get(tn) == null) {
-			Topic nt = new Topic(tn);
+		if (subscriptions.get(tn) == null) {
+			Topic t = new Topic(tn);
 			synchronized (topics) {
-				topics.put(tn, nt);
+				topics.put(tn, t);
 			}
-			topicClts.put(tn, new HashSet<UUID>());
+			subscriptions.put(tn, new HashSet<UUID>());
 			Log.getLogger().info((LogicPS.class.getName() + " - client with UUID: " + c.getUuid() + " create topic: " + tn));
 		}
-		topicClts.get(tn).add(c.getUuid());
-		synchronized (topicClts.get(tn)) {
-			for (UUID u: topicClts.get(tn) ) {
-				activeClts.get(u).notify(c, topics.get(tn)); //notify to users this subscription 
+		subscriptions.get(tn).add(c.getUuid());
+		synchronized (subscriptions.get(tn)) {
+			for (UUID u: subscriptions.get(tn) ) {
+				if (activeClts.get(u) != null)
+					activeClts.get(u).notify(c, tn); //notify to users this subscription 
 			}
 			notifyOnSubscribe(c, tn);
 		}
 		Log.getLogger().info((LogicPS.class.getName() + " - client with UUID: " + c.getUuid() + " subscribed to topic: " + tn));
-		Log.getLogger().fine(LogicPS.class.getName() + " - users subscribed to topic: " + tn + ": " +  topicClts.get(tn).toString());
+		Log.getLogger().fine(LogicPS.class.getName() + " - users subscribed to topic: " + tn + ": " +  subscriptions.get(tn).toString());
 	}
 	
 	private void notifyOnSubscribe(IClientPS c, String tn) throws RemoteException { //checar con Toño
 		for (Publication p: topics.get(tn).getPubs()) {
-			c.notify(p, topics.get(tn));
+			c.notify(p, tn);
 		}
 	}
 	
@@ -102,8 +109,8 @@ public class LogicPS implements Runnable {
 			if (!registeredClts.containsKey(c.getUuid())) {
 				registeredClts.put(c.getUuid(), ""); //change "" for hashed password
 				Log.getLogger().info((LogicPS.class.getName() + " - client with UUID: " + c.getUuid() + " registered"));
-				synchronized (lastPublication) {
-					lastPublication.put(c.getUuid(), (long) 0);
+				synchronized (lastUpdate) {
+					lastUpdate.put(c.getUuid(), (long) 0);
 				}
 				return true;
 			}
@@ -111,17 +118,22 @@ public class LogicPS implements Runnable {
 		return false;
 	}
 	
+	public void publish(IClientPS c, String msg, String tn) throws RemoteException {
+		if ( topics.get(tn) != null) {
+			Publication p = new Publication(c.getUuid(), msg);
+			topics.get(tn).getPubs().add(p);
+			for (IClientPS ic: activeClts.values()) {
+				ic.notify(p, tn);
+			}
+		}
+	}
+	
 	@Override
 	public void run() {
 		Log.getLogger().info((LogicPS.class.getName() + " - Ready"));
 		latch.countDown();
 		while (true) {
-			try {/*
-				synchronized (activeClts) {
-					for (IClientPS c: activeClts) { //must check for activeClts with pending Msgs
-						//c.ntfy();
-					}
-				}*/
+			try {
 				Thread.sleep(1000*5);
 			} catch (InterruptedException e) {
 				e.printStackTrace();

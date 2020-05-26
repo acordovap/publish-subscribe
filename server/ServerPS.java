@@ -25,9 +25,8 @@ public class ServerPS implements IServerPS, Runnable{
 	}
 	
 	@Override
-	public void publish() throws RemoteException {
-		// TODO Auto-generated method stub
-		
+	public void publish(IClientPS c, String msg, String tn) throws RemoteException {
+		lps.publish(c, msg, tn);
 	}
 
 	@Override
@@ -49,6 +48,11 @@ public class ServerPS implements IServerPS, Runnable{
 	@Override
 	public boolean login(IClientPS c) throws RemoteException {
 		return lps.loginClt(c);
+	}
+	
+	@Override
+	public boolean logout(IClientPS c) throws RemoteException {
+		return lps.logoutClt(c);
 	}
 	
 	@Override

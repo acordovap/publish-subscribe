@@ -6,6 +6,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
 import java.security.PublicKey;
+import java.util.ArrayList;
 import java.util.UUID;
 
 import javax.swing.DefaultListModel;
@@ -54,7 +55,6 @@ public class GUIcPS extends javax.swing.JFrame {
         jScrollPane5 = new javax.swing.JScrollPane();
         jtxtEvents = new javax.swing.JTextArea();
         jLabel7 = new javax.swing.JLabel();
-        jbtnRefresh = new javax.swing.JButton();
 
         jLabel3.setText("user:");
 
@@ -169,14 +169,6 @@ public class GUIcPS extends javax.swing.JFrame {
 
         jLabel7.setText("Events");
 
-        jbtnRefresh.setText("Refresh Topics");
-        jbtnRefresh.setEnabled(false);
-        jbtnRefresh.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jbtnRefreshActionPerformed(evt);
-            }
-        });
-
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -209,7 +201,7 @@ public class GUIcPS extends javax.swing.JFrame {
                         .addGap(15, 15, 15))
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jbtnRefresh, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            //.addComponent(jbtnRefresh, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addGroup(layout.createSequentialGroup()
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addComponent(filler1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -248,7 +240,7 @@ public class GUIcPS extends javax.swing.JFrame {
                         .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 235, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 235, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jbtnRefresh, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE)
+                //.addComponent(jbtnRefresh, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
                         .addGap(31, 31, 31)
@@ -295,7 +287,7 @@ public class GUIcPS extends javax.swing.JFrame {
 	            jtxtUser.setText(c.getUuid().toString()); jtxtUser.setEnabled(false);
 	            jpsswP.setEnabled(false);
 	
-	            
+	            /*
 	            DefaultListModel<String> listModel = new DefaultListModel<>();
 	            String[] cars = {"Volvo", "BMW", "Ford", "Mazda"};
 	            for (String car : cars) {
@@ -303,12 +295,11 @@ public class GUIcPS extends javax.swing.JFrame {
 	            }
 	            //listModel.clear();
 	            jList1.setModel(listModel);
-	            
+	            */
 	            
 	            /*jList1.removeAll(); */jList1.setEnabled(true);
 	            /*jList2.removeAll(); */jList2.setEnabled(true);
 	            jtxtToSU.setText(""); jtxtToSU.setEnabled(true);
-	            jbtnRefresh.setEnabled(true);
 	            jbtnSubscribe.setEnabled(true);
 	            jbtnUnsubscribe.setEnabled(true);
 	            jbtnPublish.setEnabled(true);
@@ -324,7 +315,6 @@ public class GUIcPS extends javax.swing.JFrame {
             jList1.removeAll(); jList1.setEnabled(false);
             jList2.removeAll(); jList2.setEnabled(false);
             jtxtToSU.setText(""); jtxtToSU.setEnabled(false);
-            jbtnRefresh.setEnabled(false);
             jbtnSubscribe.setEnabled(false);
             jbtnUnsubscribe.setEnabled(false);
             jbtnPublish.setEnabled(false);
@@ -368,10 +358,6 @@ public class GUIcPS extends javax.swing.JFrame {
     private void jtxtToSUFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_jtxtToSUFocusGained
         // TODO add your handling code here:
     }//GEN-LAST:event_jtxtToSUFocusGained
-
-    private void jbtnRefreshActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnRefreshActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jbtnRefreshActionPerformed
 
     public static void main(String args[]) {
         try {
@@ -417,7 +403,7 @@ public class GUIcPS extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane5;
     private javax.swing.JButton jbtnLogin;
     private javax.swing.JButton jbtnPublish;
-    private javax.swing.JButton jbtnRefresh;
+    //private javax.swing.JButton jbtnRefresh;
     private javax.swing.JButton jbtnSubscribe;
     private javax.swing.JButton jbtnUnsubscribe;
     private javax.swing.JPasswordField jpsswP;
@@ -455,6 +441,7 @@ public class GUIcPS extends javax.swing.JFrame {
 
 		@Override
 		public void notify(IClientPS c, String tn) throws RemoteException {
+			jtxtEvents.setText("Client with UUID: " + c.getUuid() + " subscribed to topic: " + tn);
 			System.out.println("Client with UUID: " + c.getUuid() + " subscribed to topic: " + tn);
 		}
 		
@@ -462,6 +449,7 @@ public class GUIcPS extends javax.swing.JFrame {
 		public void notify(Publication p, String tn) throws RemoteException {
 			if (p.getTick() > getCurrentTick()) {
 				setCurrentTick(p.getTick());
+				jtxtEvents.setText(tn + "\t--> " + "UUID: " + p.getUuidPublisher() + "\tMESSAGE: " + p.getMsg());
 				System.out.println(tn + "\t--> " + "UUID: " + p.getUuidPublisher() + "\tMESSAGE: " + p.getMsg());
 			}
 		}
@@ -475,6 +463,23 @@ public class GUIcPS extends javax.swing.JFrame {
 		public PublicKey getPublicKey() throws RemoteException {
 			// TODO Auto-generated method stub
 			return null;
+		}
+
+		@Override
+		public void updateAllTopics(ArrayList<String> s) throws RemoteException {
+            DefaultListModel<String> listModel = new DefaultListModel<>();
+            for (String i : s) {
+                listModel.addElement(i);
+                System.out.println(i);
+            }
+            jList1.setModel(listModel);
+			
+		}
+
+		@Override
+		public void updateSubscriptedTopics(ArrayList<String> s) throws RemoteException {
+			// TODO Auto-generated method stub
+			
 		}
     	
     }

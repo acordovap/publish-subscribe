@@ -15,6 +15,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
+import java.util.ArrayList;
 import java.util.UUID;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -64,15 +65,14 @@ public class ClientPS extends UnicastRemoteObject implements IClientPS, Serializ
 
 	@Override
 	public void notify(IClientPS c, String tn) throws RemoteException {
-		System.out.println("Client with UUID: " + c.getUuid() + " subscribed to topic: " + tn);
+		System.out.println("UUID: " + c.getUuid() + "\tsubscribed to topic: " + tn);
 	}
 	
 	@Override
 	public void notify(Publication p, String tn) throws RemoteException {
 		if (p.getTick() > getCurrentTick()) {
 			setCurrentTick(p.getTick());
-			System.out.println(tn + "\t--> " + "UUID: " + p.getUuidPublisher() + "\tMESSAGE: " + p.getMsg());
-			//System.out.println("New publication on topic: " + tn + " from UUID:" + p.getUuidPublisher() + "\n\t" + p.getMsg());
+			System.out.println("UUID: " + p.getUuidPublisher() + "\tpublished on topic: " + tn + " " + "\tthe message: " + p.getMsg());
 		}
 	}
 
@@ -106,12 +106,21 @@ public class ClientPS extends UnicastRemoteObject implements IClientPS, Serializ
         
         server.login(c1);
         
-        
-        
-        
         while (true) {
-        	
+        	//TODO: implement UI
         }
+		
+	}
+
+	@Override
+	public void updateAllTopics(ArrayList<String> s) throws RemoteException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void updateSubscriptedTopics(ArrayList<String> s) throws RemoteException {
+		// TODO Auto-generated method stub
 		
 	}
 

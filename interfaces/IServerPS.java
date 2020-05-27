@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.rmi.RemoteException;
 import java.security.InvalidKeyException;
-import java.util.Set;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.SealedObject;
@@ -19,6 +18,4 @@ public interface IServerPS extends java.rmi.Remote {
     boolean login(IClientPS c) throws RemoteException;
     boolean logout(IClientPS c) throws RemoteException;
     boolean register(IClientPS c) throws RemoteException;
-    Set<String> getAllTopics() throws RemoteException;
-    Set<String> getSubscriptedTopics(IClientPS c) throws RemoteException;
 }

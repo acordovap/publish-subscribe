@@ -2,7 +2,6 @@ package server;
 
 import interfaces.IClientPS;
 import interfaces.IServerPS;
-
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -14,10 +13,8 @@ import java.security.InvalidKeyException;
 import java.security.PermissionCollection;
 import java.security.Permissions;
 import java.security.Policy;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.SealedObject;
@@ -93,15 +90,4 @@ public class ServerPS implements IServerPS, Runnable{
             Logger.getLogger(ServerPS.class.getName()).log(Level.SEVERE, null, ex);
         }
 	}
-
-	@Override
-	public Set<String> getAllTopics() throws RemoteException {
-		return lps.getAllTopics();
-	}
-
-	@Override
-	public Set<String> getSubscriptedTopics(IClientPS c) throws RemoteException {
-		return lps.getSubscriptedTopics(c);
-	}
-
 }

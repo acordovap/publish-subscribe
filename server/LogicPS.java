@@ -5,6 +5,7 @@ import java.rmi.RemoteException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -12,13 +13,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-
+import java.util.stream.Collectors;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SealedObject;
-
 import interfaces.IClientPS;
 import interfaces.IServerPS;
 import objects.Publication;
@@ -49,7 +49,8 @@ public class LogicPS implements Runnable {
 			if (registeredClts.containsKey(c.getUuid()) && registeredClts.get(c.getUuid()).equals("") ) { //change "" for hashed password
 				synchronized (activeClts) {
 					activeClts.put(c.getUuid(), c);
-					Log.getLogger().info((LogicPS.class.getName() + " - client with UUID: " + c.getUuid() + " logged in"));
+					Log.getLogger().info((LogicPS.class.getName() + "\t- client with UUID: " + c.getUuid() + "\tlogged in"));
+					c.updateAllTopics(getAllTopics());
 					updateClientN(c);			
 					return true;
 				}
@@ -61,7 +62,7 @@ public class LogicPS implements Runnable {
 	public boolean logoutClt(IClientPS c) throws RemoteException {
 		activeClts.remove(c.getUuid());
 		lastUpdate.put(c.getUuid(), c.getCurrentTick());
-		Log.getLogger().info((LogicPS.class.getName() + " - client with UUID: " + c.getUuid() + " logged out"));
+		Log.getLogger().info((LogicPS.class.getName() + "\t- client with UUID: " + c.getUuid() + "\tlogged out"));
 		return false;
 	}
 	
@@ -129,10 +130,10 @@ public class LogicPS implements Runnable {
 					topics.put(prefix, t);
 				}
 				subscriptions.put(prefix, new HashSet<UUID>());
-				Log.getLogger().info((LogicPS.class.getName() + " - client with UUID: " + c.getUuid() + " create topic: " + prefix));
+				Log.getLogger().info((LogicPS.class.getName() + "\t- client with UUID: " + c.getUuid() + "\tcreate topic: " + prefix));
 				subscriptions.get(prefix).add(c.getUuid());
 				c.notify(c, prefix);
-				Log.getLogger().info((LogicPS.class.getName() + " - client with UUID: " + c.getUuid() + " subscribed to topic: " + prefix));
+				Log.getLogger().info((LogicPS.class.getName() + "\t- client with UUID: " + c.getUuid() + "\tsubscribed to topic: " + prefix));
 			}
 		}
 	}
@@ -147,7 +148,7 @@ public class LogicPS implements Runnable {
 		synchronized (registeredClts) {
 			if (!registeredClts.containsKey(c.getUuid())) {
 				registeredClts.put(c.getUuid(), ""); // change "" for hashed password
-				Log.getLogger().info((LogicPS.class.getName() + " - client with UUID: " + c.getUuid() + " registered"));
+				Log.getLogger().info((LogicPS.class.getName() + "\t- client with UUID: " + c.getUuid() + "\tregistered"));
 				synchronized (lastUpdate) {
 					lastUpdate.put(c.getUuid(), (long) 0);
 				}
@@ -162,6 +163,7 @@ public class LogicPS implements Runnable {
 			if ( topics.get(tn) != null) {
 				Publication p = new Publication(c.getUuid(), msg);
 				topics.get(tn).getPubs().add(p);
+				Log.getLogger().info((LogicPS.class.getName() + "\t- client with UUID: " + c.getUuid() + "\tpublished on topic: " + tn + "\tthe message: " + msg));
 				for (IClientPS ic: activeClts.values()) {
 					ic.notify(p, tn);
 				}
@@ -187,12 +189,12 @@ public class LogicPS implements Runnable {
 		}
 	}
 
-	public Set<String> getAllTopics() {
-		return topics.keySet();
+	public ArrayList<String> getAllTopics() {
+		return topics.keySet().stream().collect(Collectors.toCollection(ArrayList::new) );
 	}
 
-	public Set<String> getSubscriptedTopics(IClientPS c) throws RemoteException {
-		Set<String> s = new HashSet<>();
+	public ArrayList<String> getSubscriptedTopics(IClientPS c) throws RemoteException {
+		ArrayList<String> s = new ArrayList<>();
 		for (Map.Entry<String, Set<UUID>> e : subscriptions.entrySet()) {
 			if (e.getValue().contains(c.getUuid())) {
 				s.add(e.getKey());
@@ -203,8 +205,8 @@ public class LogicPS implements Runnable {
 
 	public void unsubscribe(IClientPS c, String tns) throws RemoteException {
 		subscriptions.get(tns).remove(c.getUuid());
-		Log.getLogger().info((LogicPS.class.getName() + " - client with UUID: " + c.getUuid() + " unsubscribed from topic: " + tns));
-		Log.getLogger().fine(LogicPS.class.getName() + " - users subscribed to topic: " + tns + ": " +  subscriptions.get(tns).toString());
+		Log.getLogger().info((LogicPS.class.getName() + "\t- client with UUID: " + c.getUuid() + "\tunsubscribed from topic: " + tns));
+		Log.getLogger().fine(LogicPS.class.getName() + "\t- users subscribed to topic: " + tns + ": " +  subscriptions.get(tns).toString());
 		for (String st : topics.get(tns).getSubtopics()) {
 			unsubscribe(c, st);
 		}

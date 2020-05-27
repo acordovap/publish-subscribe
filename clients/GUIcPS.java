@@ -1,9 +1,27 @@
 package clients;
 
+import java.io.Serializable;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.server.UnicastRemoteObject;
+import java.security.PublicKey;
+import java.util.UUID;
+
 import javax.swing.DefaultListModel;
+
+import interfaces.IClientPS;
+import interfaces.IServerPS;
+import objects.Publication;
+import server.ServerPS;
 
 public class GUIcPS extends javax.swing.JFrame {
 	private static final long serialVersionUID = 7408963987148694415L;
+	
+	private CPS c;
+	String saddress = "127.0.0.1"; // server's IP address
+    IServerPS server; 
+	
 	public GUIcPS() {
         initComponents();
     }
@@ -70,7 +88,12 @@ public class GUIcPS extends javax.swing.JFrame {
         jbtnLogin.setText("login");
         jbtnLogin.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jbtnLoginActionPerformed(evt);
+                try {
+					jbtnLoginActionPerformed(evt);
+				} catch (RemoteException | NotBoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
             }
         });
 
@@ -256,31 +279,42 @@ public class GUIcPS extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_jtxtUserActionPerformed
 
-    private void jbtnLoginActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnLoginActionPerformed
+    private void jbtnLoginActionPerformed(java.awt.event.ActionEvent evt) throws RemoteException, NotBoundException {//GEN-FIRST:event_jbtnLoginActionPerformed
         if(jbtnLogin.getText().equals("login")) {
-            jbtnLogin.setText("logout");
-            jtxtUser.setEnabled(false);
-            jpsswP.setEnabled(false);
-
-            
-            DefaultListModel<String> listModel = new DefaultListModel<>();
-            String[] cars = {"Volvo", "BMW", "Ford", "Mazda"};
-            for (String car : cars) {
-                listModel.addElement(car);
-            }
-            //listModel.clear();
-            jList1.setModel(listModel);
-            
-            
-            /*jList1.removeAll(); */jList1.setEnabled(true);
-            /*jList2.removeAll(); */jList2.setEnabled(true);
-            jtxtToSU.setText(""); jtxtToSU.setEnabled(true);
-            jbtnRefresh.setEnabled(true);
-            jbtnSubscribe.setEnabled(true);
-            jbtnUnsubscribe.setEnabled(true);
-            jbtnPublish.setEnabled(true);
-            jtxtMsg.setText(""); jtxtMsg.setEnabled(true);
-            jtxtEvents.setText("");            
+        	if (jtxtUser.getText().equals("")) {
+        		c = new CPS();
+        	}
+        	else {
+        		c = new CPS(UUID.fromString(jtxtUser.getText()));
+        	}
+        	server = (IServerPS) LocateRegistry.getRegistry(saddress).lookup( ServerPS.class.getName());
+        	server.register(c);
+        	server.login(c);
+            //if ( (!server.register(c) && server.login(c)) || (server.register(c) && server.login(c))) {
+	        	jbtnLogin.setText("logout");
+	            jtxtUser.setText(c.getUuid().toString()); jtxtUser.setEnabled(false);
+	            jpsswP.setEnabled(false);
+	
+	            
+	            DefaultListModel<String> listModel = new DefaultListModel<>();
+	            String[] cars = {"Volvo", "BMW", "Ford", "Mazda"};
+	            for (String car : cars) {
+	                listModel.addElement(car);
+	            }
+	            //listModel.clear();
+	            jList1.setModel(listModel);
+	            
+	            
+	            /*jList1.removeAll(); */jList1.setEnabled(true);
+	            /*jList2.removeAll(); */jList2.setEnabled(true);
+	            jtxtToSU.setText(""); jtxtToSU.setEnabled(true);
+	            jbtnRefresh.setEnabled(true);
+	            jbtnSubscribe.setEnabled(true);
+	            jbtnUnsubscribe.setEnabled(true);
+	            jbtnPublish.setEnabled(true);
+	            jtxtMsg.setText(""); jtxtMsg.setEnabled(true);
+	            jtxtEvents.setText("");
+            //}            
         }
         else{ //logout
             jbtnLogin.setText("login");
@@ -393,4 +427,59 @@ public class GUIcPS extends javax.swing.JFrame {
     private javax.swing.JTextField jtxtToSU;
     private javax.swing.JFormattedTextField jtxtUser;
     // End of variables declaration//GEN-END:variables
+    
+    class CPS extends UnicastRemoteObject implements IClientPS, Serializable  {
+    	private static final long serialVersionUID = 3631424906387316761L;
+    	private UUID uuid;
+    	private long currentTick;
+    	
+		protected CPS() throws RemoteException {
+			super();
+			currentTick = 0;
+			uuid = UUID.randomUUID();
+		}
+
+		protected CPS(UUID uuid) throws RemoteException {
+			super();
+			currentTick = 0;
+			this.uuid = uuid;
+		}
+		
+		public long getCurrentTick() {
+			return currentTick;
+		}
+
+		public void setCurrentTick(long currentTick) {
+			this.currentTick = currentTick;
+		}
+
+		@Override
+		public void notify(IClientPS c, String tn) throws RemoteException {
+			System.out.println("Client with UUID: " + c.getUuid() + " subscribed to topic: " + tn);
+		}
+		
+		@Override
+		public void notify(Publication p, String tn) throws RemoteException {
+			if (p.getTick() > getCurrentTick()) {
+				setCurrentTick(p.getTick());
+				System.out.println(tn + "\t--> " + "UUID: " + p.getUuidPublisher() + "\tMESSAGE: " + p.getMsg());
+			}
+		}
+
+		@Override
+		public UUID getUuid() throws RemoteException {
+			return uuid;
+		}
+
+		@Override
+		public PublicKey getPublicKey() throws RemoteException {
+			// TODO Auto-generated method stub
+			return null;
+		}
+    	
+    }
+    
+    
 }
+
+

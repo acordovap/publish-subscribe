@@ -2,17 +2,25 @@ package server;
 
 import interfaces.IClientPS;
 import interfaces.IServerPS;
+
+import java.io.IOException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.security.AllPermission;
 import java.security.CodeSource;
+import java.security.InvalidKeyException;
 import java.security.PermissionCollection;
 import java.security.Permissions;
 import java.security.Policy;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.SealedObject;
 
 public class ServerPS implements IServerPS, Runnable{
 
@@ -25,8 +33,8 @@ public class ServerPS implements IServerPS, Runnable{
 	}
 	
 	@Override
-	public void publish(IClientPS c, String msg, String tn) throws RemoteException {
-		lps.publish(c, msg, tn);
+	public void publish(IClientPS c, String msg, SealedObject cmsg, String tn) throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException, ClassNotFoundException, IOException {
+		lps.publish(c, msg, cmsg, tn);
 	}
 
 	@Override
@@ -35,9 +43,8 @@ public class ServerPS implements IServerPS, Runnable{
 	}
 
 	@Override
-	public void unsubscribe() throws RemoteException {
-		// TODO Auto-generated method stub
-		
+	public void unsubscribe(IClientPS c, String tn) throws RemoteException {
+		lps.unsubscribe(c, tn);
 	}
 
 	@Override
@@ -85,6 +92,16 @@ public class ServerPS implements IServerPS, Runnable{
         } catch (RemoteException ex) {
             Logger.getLogger(ServerPS.class.getName()).log(Level.SEVERE, null, ex);
         }
+	}
+
+	@Override
+	public Set<String> getAllTopics() throws RemoteException {
+		return lps.getAllTopics();
+	}
+
+	@Override
+	public Set<String> getSubscriptedTopics(IClientPS c) throws RemoteException {
+		return lps.getSubscriptedTopics(c);
 	}
 
 }

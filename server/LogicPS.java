@@ -1,6 +1,10 @@
 package server;
 
+import java.io.IOException;
 import java.rmi.RemoteException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -8,7 +12,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SealedObject;
+
 import interfaces.IClientPS;
+import interfaces.IServerPS;
 import objects.Publication;
 import objects.Topic;
 
@@ -19,14 +31,17 @@ public class LogicPS implements Runnable {
 	private Map<String, Set<UUID>> subscriptions;
 	private Map<String, Topic> topics;
 	private Map<UUID, Long> lastUpdate;
+	private Cipher cipher;
 
-	public LogicPS(CountDownLatch l) {
+	public LogicPS(CountDownLatch l) throws NoSuchAlgorithmException, NoSuchPaddingException {
 		this.latch = l;
 		lastUpdate = Collections.synchronizedMap(new HashMap<>());
 		topics = Collections.synchronizedMap(new HashMap<>());
 		subscriptions = Collections.synchronizedMap(new HashMap<>());
 		activeClts = Collections.synchronizedMap(new HashMap<>());
 		registeredClts = Collections.synchronizedMap(new HashMap<>());
+		//keys = Collections.synchronizedMap(new HashMap<>());
+		cipher = Cipher.getInstance(IServerPS.ALG);
 	}
 	
 	public boolean loginClt(IClientPS c) throws RemoteException {
@@ -131,7 +146,7 @@ public class LogicPS implements Runnable {
 	public boolean registerClt(IClientPS c) throws RemoteException {
 		synchronized (registeredClts) {
 			if (!registeredClts.containsKey(c.getUuid())) {
-				registeredClts.put(c.getUuid(), ""); //change "" for hashed password
+				registeredClts.put(c.getUuid(), ""); // change "" for hashed password
 				Log.getLogger().info((LogicPS.class.getName() + " - client with UUID: " + c.getUuid() + " registered"));
 				synchronized (lastUpdate) {
 					lastUpdate.put(c.getUuid(), (long) 0);
@@ -142,14 +157,21 @@ public class LogicPS implements Runnable {
 		return false;
 	}
 	
-	public void publish(IClientPS c, String msg, String tn) throws RemoteException {
-		if ( topics.get(tn) != null) {
-			Publication p = new Publication(c.getUuid(), msg);
-			topics.get(tn).getPubs().add(p);
-			for (IClientPS ic: activeClts.values()) {
-				ic.notify(p, tn);
+	public void publish(IClientPS c, String msg, SealedObject cmsg, String tn) throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException, ClassNotFoundException, IOException {
+		if(authenticateMsg(msg, cmsg, c.getPublicKey())) {
+			if ( topics.get(tn) != null) {
+				Publication p = new Publication(c.getUuid(), msg);
+				topics.get(tn).getPubs().add(p);
+				for (IClientPS ic: activeClts.values()) {
+					ic.notify(p, tn);
+				}
 			}
 		}
+	}
+	
+	protected boolean authenticateMsg(String msg, SealedObject cmsg, PublicKey k) throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException, ClassNotFoundException, IOException {
+		cipher.init(Cipher.DECRYPT_MODE, k);
+		return ((String) cmsg.getObject(cipher)).equals(msg);
 	}
 	
 	@Override
@@ -162,6 +184,29 @@ public class LogicPS implements Runnable {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
+		}
+	}
+
+	public Set<String> getAllTopics() {
+		return topics.keySet();
+	}
+
+	public Set<String> getSubscriptedTopics(IClientPS c) throws RemoteException {
+		Set<String> s = new HashSet<>();
+		for (Map.Entry<String, Set<UUID>> e : subscriptions.entrySet()) {
+			if (e.getValue().contains(c.getUuid())) {
+				s.add(e.getKey());
+			}
+		}
+		return s;
+	}
+
+	public void unsubscribe(IClientPS c, String tns) throws RemoteException {
+		subscriptions.get(tns).remove(c.getUuid());
+		Log.getLogger().info((LogicPS.class.getName() + " - client with UUID: " + c.getUuid() + " unsubscribed from topic: " + tns));
+		Log.getLogger().fine(LogicPS.class.getName() + " - users subscribed to topic: " + tns + ": " +  subscriptions.get(tns).toString());
+		for (String st : topics.get(tns).getSubtopics()) {
+			unsubscribe(c, st);
 		}
 	}
 

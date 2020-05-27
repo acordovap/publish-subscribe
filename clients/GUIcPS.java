@@ -1,14 +1,25 @@
 package clients;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
+import java.security.InvalidKeyException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.UUID;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SealedObject;
 import javax.swing.DefaultListModel;
 
 import interfaces.IClientPS;
@@ -89,7 +100,12 @@ public class GUIcPS extends javax.swing.JFrame {
         jbtnLogin.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 try {
-					jbtnLoginActionPerformed(evt);
+					try {
+						jbtnLoginActionPerformed(evt);
+					} catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 				} catch (RemoteException | NotBoundException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -117,7 +133,12 @@ public class GUIcPS extends javax.swing.JFrame {
         jbtnSubscribe.setEnabled(false);
         jbtnSubscribe.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jbtnSubscribeActionPerformed(evt);
+                try {
+					jbtnSubscribeActionPerformed(evt);
+				} catch (RemoteException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
             }
         });
 
@@ -125,7 +146,12 @@ public class GUIcPS extends javax.swing.JFrame {
         jbtnUnsubscribe.setEnabled(false);
         jbtnUnsubscribe.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jbtnUnsubscribeActionPerformed(evt);
+                try {
+					jbtnUnsubscribeActionPerformed(evt);
+				} catch (RemoteException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
             }
         });
 
@@ -158,13 +184,20 @@ public class GUIcPS extends javax.swing.JFrame {
         jbtnPublish.setEnabled(false);
         jbtnPublish.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jbtnPublishActionPerformed(evt);
+                try {
+					jbtnPublishActionPerformed(evt);
+				} catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException | ClassNotFoundException
+						| IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
             }
         });
 
         jtxtEvents.setColumns(20);
         jtxtEvents.setRows(5);
         jtxtEvents.setFocusable(false);
+        jtxtEvents.setText("");
         jScrollPane5.setViewportView(jtxtEvents);
 
         jLabel7.setText("Events");
@@ -267,11 +300,42 @@ public class GUIcPS extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    private void loginLogoutComponents(boolean isLogin) throws RemoteException {
+    	if(isLogin) {
+        	jbtnLogin.setText("logout");
+            jtxtUser.setText(c.getUuid().toString()); jtxtUser.setEnabled(false);
+            jpsswP.setEnabled(false);
+            jList1.setEnabled(true);
+            jList2.setEnabled(true);
+            jtxtToSU.setEnabled(true);
+            jbtnSubscribe.setEnabled(true);
+            jbtnUnsubscribe.setEnabled(true);
+            jbtnPublish.setEnabled(true);
+            jtxtMsg.setEnabled(true);
+            //jtxtEvents.setText("");
+    	}
+    	else {
+            jbtnLogin.setText("login");
+            jtxtUser.setEnabled(true);
+            jpsswP.setEnabled(true);
+            	DefaultListModel<String> listModel = new DefaultListModel<>();
+            jList1.setModel(listModel); jList1.setEnabled(false);
+            jList2.setModel(listModel); jList2.setEnabled(false);
+            jtxtToSU.setText(""); jtxtToSU.setEnabled(false);
+            jbtnSubscribe.setEnabled(false);
+            jbtnUnsubscribe.setEnabled(false);
+            jbtnPublish.setEnabled(false);
+            jtxtMsg.setText(""); jtxtMsg.setEnabled(false);
+            jtxtEvents.setText("");
+    	}
+    		
+    }
+    
     private void jtxtUserActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jtxtUserActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jtxtUserActionPerformed
 
-    private void jbtnLoginActionPerformed(java.awt.event.ActionEvent evt) throws RemoteException, NotBoundException {//GEN-FIRST:event_jbtnLoginActionPerformed
+    private void jbtnLoginActionPerformed(java.awt.event.ActionEvent evt) throws RemoteException, NotBoundException, NoSuchAlgorithmException, NoSuchPaddingException {//GEN-FIRST:event_jbtnLoginActionPerformed
         if(jbtnLogin.getText().equals("login")) {
         	if (jtxtUser.getText().equals("")) {
         		c = new CPS();
@@ -280,48 +344,23 @@ public class GUIcPS extends javax.swing.JFrame {
         		c = new CPS(UUID.fromString(jtxtUser.getText()));
         	}
         	server = (IServerPS) LocateRegistry.getRegistry(saddress).lookup( ServerPS.class.getName());
-        	server.register(c);
-        	server.login(c);
-            //if ( (!server.register(c) && server.login(c)) || (server.register(c) && server.login(c))) {
-	        	jbtnLogin.setText("logout");
-	            jtxtUser.setText(c.getUuid().toString()); jtxtUser.setEnabled(false);
-	            jpsswP.setEnabled(false);
-	
-	            /*
-	            DefaultListModel<String> listModel = new DefaultListModel<>();
-	            String[] cars = {"Volvo", "BMW", "Ford", "Mazda"};
-	            for (String car : cars) {
-	                listModel.addElement(car);
-	            }
-	            //listModel.clear();
-	            jList1.setModel(listModel);
-	            */
-	            
-	            /*jList1.removeAll(); */jList1.setEnabled(true);
-	            /*jList2.removeAll(); */jList2.setEnabled(true);
-	            jtxtToSU.setText(""); jtxtToSU.setEnabled(true);
-	            jbtnSubscribe.setEnabled(true);
-	            jbtnUnsubscribe.setEnabled(true);
-	            jbtnPublish.setEnabled(true);
-	            jtxtMsg.setText(""); jtxtMsg.setEnabled(true);
-	            jtxtEvents.setText("");
-            //}            
+        	if (server.register(c)) {
+        		boolean f = server.login(c);
+        		if(f) {
+        			loginLogoutComponents(f);
+        		}
+        	}
+        	else {
+        		boolean f = server.login(c);
+        		if(f) {
+        			loginLogoutComponents(f);
+        		}
+        	}
+        	
         }
         else{ //logout
-            jbtnLogin.setText("login");
-            jtxtUser.setEnabled(true);
-            jpsswP.setEnabled(true);
-            
-            jList1.removeAll(); jList1.setEnabled(false);
-            jList2.removeAll(); jList2.setEnabled(false);
-            jtxtToSU.setText(""); jtxtToSU.setEnabled(false);
-            jbtnSubscribe.setEnabled(false);
-            jbtnUnsubscribe.setEnabled(false);
-            jbtnPublish.setEnabled(false);
-            /*jtxtMsg.setText(""); */jtxtMsg.setEnabled(false);
-            //jtxtEvents.setText("");
-
-
+        	boolean f = server.logout(c);
+        	loginLogoutComponents(f);
         }
             
             
@@ -331,16 +370,24 @@ public class GUIcPS extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_jButton2ActionPerformed
 
-    private void jbtnSubscribeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnSubscribeActionPerformed
-        //String s = jtxtToSU.getText();
+    private void jbtnSubscribeActionPerformed(java.awt.event.ActionEvent evt) throws RemoteException {//GEN-FIRST:event_jbtnSubscribeActionPerformed
+    	String s = jtxtToSU.getText();
+    	if (s.length() > 0) {
+    		server.subscribe(c, s);
+    	}
     }//GEN-LAST:event_jbtnSubscribeActionPerformed
 
-    private void jbtnUnsubscribeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnUnsubscribeActionPerformed
-        // TODO add your handling code here:
+    private void jbtnUnsubscribeActionPerformed(java.awt.event.ActionEvent evt) throws RemoteException {//GEN-FIRST:event_jbtnUnsubscribeActionPerformed
+    	String s = jtxtToSU.getText();
+    	if (s.length() > 0) {
+    		server.unsubscribe(c, s);
+    	}
     }//GEN-LAST:event_jbtnUnsubscribeActionPerformed
 
-    private void jbtnPublishActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnPublishActionPerformed
-        // TODO add your handling code here:
+    private void jbtnPublishActionPerformed(java.awt.event.ActionEvent evt) throws InvalidKeyException, RemoteException, UnsupportedEncodingException, IllegalBlockSizeException, BadPaddingException, ClassNotFoundException, IOException {//GEN-FIRST:event_jbtnPublishActionPerformed
+        if (!jtxtMsg.getText().equals("")) {
+        	server.publish(c, jtxtMsg.getText(), c.getCMsg(jtxtMsg.getText()), jtxtToSU.getText());
+        }
     }//GEN-LAST:event_jbtnPublishActionPerformed
 
     private void jList1ValueChanged(javax.swing.event.ListSelectionEvent evt) {//GEN-FIRST:event_jList1ValueChanged
@@ -418,17 +465,27 @@ public class GUIcPS extends javax.swing.JFrame {
     	private static final long serialVersionUID = 3631424906387316761L;
     	private UUID uuid;
     	private long currentTick;
+    	private KeyPair pair;
+    	private Cipher cipher;
     	
-		protected CPS() throws RemoteException {
+		protected CPS() throws RemoteException, NoSuchAlgorithmException, NoSuchPaddingException {
 			super();
 			currentTick = 0;
 			uuid = UUID.randomUUID();
+			KeyPairGenerator kg = KeyPairGenerator.getInstance(IServerPS.ALG);
+			kg.initialize(IServerPS.KEYLENGTH);
+			pair = kg.generateKeyPair();
+			cipher = Cipher.getInstance(IServerPS.ALG);
 		}
 
-		protected CPS(UUID uuid) throws RemoteException {
+		protected CPS(UUID uuid) throws RemoteException, NoSuchAlgorithmException, NoSuchPaddingException {
 			super();
 			currentTick = 0;
 			this.uuid = uuid;
+			KeyPairGenerator kg = KeyPairGenerator.getInstance(IServerPS.ALG);
+			kg.initialize(IServerPS.KEYLENGTH);
+			pair = kg.generateKeyPair();
+			cipher = Cipher.getInstance(IServerPS.ALG);
 		}
 		
 		public long getCurrentTick() {
@@ -441,16 +498,14 @@ public class GUIcPS extends javax.swing.JFrame {
 
 		@Override
 		public void notify(IClientPS c, String tn) throws RemoteException {
-			jtxtEvents.setText("Client with UUID: " + c.getUuid() + " subscribed to topic: " + tn);
-			System.out.println("Client with UUID: " + c.getUuid() + " subscribed to topic: " + tn);
+			jtxtEvents.setText(jtxtEvents.getText() + "UUID: " + c.getUuid() + "\tsubscribed to topic: " + tn + "\n");
 		}
 		
 		@Override
 		public void notify(Publication p, String tn) throws RemoteException {
 			if (p.getTick() > getCurrentTick()) {
 				setCurrentTick(p.getTick());
-				jtxtEvents.setText(tn + "\t--> " + "UUID: " + p.getUuidPublisher() + "\tMESSAGE: " + p.getMsg());
-				System.out.println(tn + "\t--> " + "UUID: " + p.getUuidPublisher() + "\tMESSAGE: " + p.getMsg());
+				jtxtEvents.setText(jtxtEvents.getText() + "UUID: " + p.getUuidPublisher() + "\tpublished on topic: " + tn + " " + "\tthe message: " + p.getMsg() + "\n");
 			}
 		}
 
@@ -461,8 +516,7 @@ public class GUIcPS extends javax.swing.JFrame {
 
 		@Override
 		public PublicKey getPublicKey() throws RemoteException {
-			// TODO Auto-generated method stub
-			return null;
+			return pair.getPublic();
 		}
 
 		@Override
@@ -470,16 +524,23 @@ public class GUIcPS extends javax.swing.JFrame {
             DefaultListModel<String> listModel = new DefaultListModel<>();
             for (String i : s) {
                 listModel.addElement(i);
-                System.out.println(i);
             }
             jList1.setModel(listModel);
 			
 		}
 
+		protected SealedObject getCMsg(String msg) throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException, IOException {
+			cipher.init(Cipher.ENCRYPT_MODE, pair.getPrivate());
+			return new SealedObject(msg, cipher);  
+		}
+		
 		@Override
 		public void updateSubscriptedTopics(ArrayList<String> s) throws RemoteException {
-			// TODO Auto-generated method stub
-			
+            DefaultListModel<String> listModel = new DefaultListModel<>();
+            for (String i : s) {
+                listModel.addElement(i);
+            }
+            jList2.setModel(listModel);
 		}
     	
     }

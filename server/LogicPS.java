@@ -40,7 +40,6 @@ public class LogicPS implements Runnable {
 		subscriptions = Collections.synchronizedMap(new HashMap<>());
 		activeClts = Collections.synchronizedMap(new HashMap<>());
 		registeredClts = Collections.synchronizedMap(new HashMap<>());
-		//keys = Collections.synchronizedMap(new HashMap<>());
 		cipher = Cipher.getInstance(IServerPS.ALG);
 	}
 	
@@ -51,6 +50,7 @@ public class LogicPS implements Runnable {
 					activeClts.put(c.getUuid(), c);
 					Log.getLogger().info((LogicPS.class.getName() + "\t- client with UUID: " + c.getUuid() + "\tlogged in"));
 					c.updateAllTopics(getAllTopics());
+					c.updateSubscriptedTopics(getSubscriptedTopics(c));
 					updateClientN(c);			
 					return true;
 				}
@@ -104,11 +104,12 @@ public class LogicPS implements Runnable {
 			}
 			notifyOnSubscribe(c, tns);
 		}
-		Log.getLogger().info((LogicPS.class.getName() + " - client with UUID: " + c.getUuid() + " subscribed to topic: " + tns));
-		Log.getLogger().fine(LogicPS.class.getName() + " - users subscribed to topic: " + tns + ": " +  subscriptions.get(tns).toString());
+		Log.getLogger().info((LogicPS.class.getName() + "\t- client with UUID: " + c.getUuid() + "\tsubscribed to topic: " + tns));
+		Log.getLogger().fine(LogicPS.class.getName() + "\t- users subscribed to topic: " + tns + ":\t" +  subscriptions.get(tns).toString());
 		for (String st : topics.get(tns).getSubtopics()) {
 			recursiveSubscribeTo(c, st);
 		}
+		c.updateSubscriptedTopics(getSubscriptedTopics(c));
 	}
 	
 	public void subscribeTo(IClientPS c, String tns) throws RemoteException {
@@ -135,6 +136,10 @@ public class LogicPS implements Runnable {
 				c.notify(c, prefix);
 				Log.getLogger().info((LogicPS.class.getName() + "\t- client with UUID: " + c.getUuid() + "\tsubscribed to topic: " + prefix));
 			}
+		}
+		c.updateSubscriptedTopics(getSubscriptedTopics(c));
+		for(IClientPS cc: activeClts.values()) {
+			cc.updateAllTopics(getAllTopics());
 		}
 	}
 	
@@ -165,7 +170,8 @@ public class LogicPS implements Runnable {
 				topics.get(tn).getPubs().add(p);
 				Log.getLogger().info((LogicPS.class.getName() + "\t- client with UUID: " + c.getUuid() + "\tpublished on topic: " + tn + "\tthe message: " + msg));
 				for (IClientPS ic: activeClts.values()) {
-					ic.notify(p, tn);
+					if (subscriptions.get(tn).contains(ic.getUuid()))
+						ic.notify(p, tn);
 				}
 			}
 		}
@@ -206,10 +212,11 @@ public class LogicPS implements Runnable {
 	public void unsubscribe(IClientPS c, String tns) throws RemoteException {
 		subscriptions.get(tns).remove(c.getUuid());
 		Log.getLogger().info((LogicPS.class.getName() + "\t- client with UUID: " + c.getUuid() + "\tunsubscribed from topic: " + tns));
-		Log.getLogger().fine(LogicPS.class.getName() + "\t- users subscribed to topic: " + tns + ": " +  subscriptions.get(tns).toString());
+		Log.getLogger().fine(LogicPS.class.getName() + "\t- users subscribed to topic: " + tns + ":\t" +  subscriptions.get(tns).toString());
 		for (String st : topics.get(tns).getSubtopics()) {
 			unsubscribe(c, st);
 		}
+		c.updateSubscriptedTopics(getSubscriptedTopics(c));
 	}
 
 }

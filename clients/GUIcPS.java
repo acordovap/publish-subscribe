@@ -450,7 +450,6 @@ public class GUIcPS extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane5;
     private javax.swing.JButton jbtnLogin;
     private javax.swing.JButton jbtnPublish;
-    //private javax.swing.JButton jbtnRefresh;
     private javax.swing.JButton jbtnSubscribe;
     private javax.swing.JButton jbtnUnsubscribe;
     private javax.swing.JPasswordField jpsswP;

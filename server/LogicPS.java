@@ -112,9 +112,12 @@ public class LogicPS implements Runnable {
 		c.updateSubscriptedTopics(getSubscriptedTopics(c));
 	}
 	
-	public void subscribeTo(IClientPS c, String tns) throws RemoteException {
-		if (subscriptions.get(tns) != null) {
-			recursiveSubscribeTo(c, tns);
+	public void subscribeTo(IClientPS c, String tnss) throws RemoteException {
+		
+		String tns = formatTopicName(tnss);
+		
+		if (subscriptions.get("/".concat(tns)) != null) {
+			recursiveSubscribeTo(c, "/".concat(tns));
 			return;
 		}
 		
@@ -135,6 +138,11 @@ public class LogicPS implements Runnable {
 				subscriptions.get(prefix).add(c.getUuid());
 				c.notify(c, prefix);
 				Log.getLogger().info((LogicPS.class.getName() + "\t- client with UUID: " + c.getUuid() + "\tsubscribed to topic: " + prefix));
+			}
+			else { 
+				if (subscriptions.get(prefix.concat(Topic.SEPARATOR).concat(tn[i+1])) == null) {
+					topics.get(prefix).addSubtopic(prefix+Topic.SEPARATOR+tn[i+1]);
+				}
 			}
 		}
 		c.updateSubscriptedTopics(getSubscriptedTopics(c));
@@ -163,7 +171,8 @@ public class LogicPS implements Runnable {
 		return false;
 	}
 	
-	public void publish(IClientPS c, String msg, SealedObject cmsg, String tn) throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException, ClassNotFoundException, IOException {
+	public void publish(IClientPS c, String msg, SealedObject cmsg, String tns) throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException, ClassNotFoundException, IOException {
+		String tn = "/".concat(formatTopicName(tns));
 		if(authenticateMsg(msg, cmsg, c.getPublicKey())) {
 			if ( topics.get(tn) != null) {
 				Publication p = new Publication(c.getUuid(), msg);
@@ -182,6 +191,10 @@ public class LogicPS implements Runnable {
 		return ((String) cmsg.getObject(cipher)).equals(msg);
 	}
 	
+    public static String formatTopicName(String s) {
+    	return "/".concat(s).replaceAll("/+", "/").replaceFirst("/", "");
+    }
+    
 	@Override
 	public void run() {
 		Log.getLogger().info((LogicPS.class.getName() + " - Ready"));
@@ -209,14 +222,17 @@ public class LogicPS implements Runnable {
 		return s;
 	}
 
-	public void unsubscribe(IClientPS c, String tns) throws RemoteException {
-		subscriptions.get(tns).remove(c.getUuid());
-		Log.getLogger().info((LogicPS.class.getName() + "\t- client with UUID: " + c.getUuid() + "\tunsubscribed from topic: " + tns));
-		Log.getLogger().fine(LogicPS.class.getName() + "\t- users subscribed to topic: " + tns + ":\t" +  subscriptions.get(tns).toString());
-		for (String st : topics.get(tns).getSubtopics()) {
-			unsubscribe(c, st);
+	public void unsubscribe(IClientPS c, String tn) throws RemoteException {
+		String tns = "/".concat(formatTopicName(tn));
+		if(subscriptions.get(tns) != null && subscriptions.get(tns).contains(c.getUuid())) {
+			subscriptions.get(tns).remove(c.getUuid());
+			Log.getLogger().info((LogicPS.class.getName() + "\t- client with UUID: " + c.getUuid() + "\tunsubscribed from topic: " + tns));
+			Log.getLogger().fine(LogicPS.class.getName() + "\t- users subscribed to topic: " + tns + ":\t" +  subscriptions.get(tns).toString());
+			for (String st : topics.get(tns).getSubtopics()) {
+				unsubscribe(c, st);
+			}
+			c.updateSubscriptedTopics(getSubscriptedTopics(c));
 		}
-		c.updateSubscriptedTopics(getSubscriptedTopics(c));
 	}
 
 }

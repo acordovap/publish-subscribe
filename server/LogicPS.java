@@ -113,14 +113,13 @@ public class LogicPS implements Runnable {
 	}
 	
 	public void subscribeTo(IClientPS c, String tnss) throws RemoteException {
-		
 		String tns = formatTopicName(tnss);
-		
 		if (subscriptions.get("/".concat(tns)) != null) {
-			recursiveSubscribeTo(c, "/".concat(tns));
-			return;
+			if(!subscriptions.get("/".concat(tns)).contains(c.getUuid())) {
+				recursiveSubscribeTo(c, "/".concat(tns));
+				return;
+			}
 		}
-		
 		String []tn = tns.split(Topic.SEPARATOR);
 		String prefix = new String();
 		for (int i = 0; i < tn.length; i++) {
@@ -140,8 +139,10 @@ public class LogicPS implements Runnable {
 				Log.getLogger().info((LogicPS.class.getName() + "\t- client with UUID: " + c.getUuid() + "\tsubscribed to topic: " + prefix));
 			}
 			else { 
-				if (subscriptions.get(prefix.concat(Topic.SEPARATOR).concat(tn[i+1])) == null) {
-					topics.get(prefix).addSubtopic(prefix+Topic.SEPARATOR+tn[i+1]);
+				if (i+1 < tn.length) {
+					if (subscriptions.get(prefix.concat(Topic.SEPARATOR).concat(tn[i+1])) == null) {
+						topics.get(prefix).addSubtopic(prefix+Topic.SEPARATOR+tn[i+1]);
+					}
 				}
 			}
 		}

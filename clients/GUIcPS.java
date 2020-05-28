@@ -504,8 +504,8 @@ public class GUIcPS extends javax.swing.JFrame {
 		public void notify(Publication p, String tn) throws RemoteException {
 			if (p.getTick() > getCurrentTick()) {
 				setCurrentTick(p.getTick());
-				jtxtEvents.setText(jtxtEvents.getText() + "UUID: " + p.getUuidPublisher() + "\tpublished on topic: " + tn + " " + "\tthe message: " + p.getMsg() + "\n");
 			}
+			jtxtEvents.setText(jtxtEvents.getText() + "UUID: " + p.getUuidPublisher() + "\tpublished on topic: " + tn + " " + "\tthe message: " + p.getMsg() + "\n");
 		}
 
 		@Override

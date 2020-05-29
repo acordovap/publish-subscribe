@@ -93,18 +93,18 @@ public class ClientPS extends UnicastRemoteObject implements IClientPS, Serializ
         String saddress = "127.0.0.1"; // server's IP address
         IServerPS server = (IServerPS) LocateRegistry.getRegistry(saddress).lookup( ServerPS.class.getName());
         
-        server.register(c1);
-        server.login(c1);
+        server.register(c1, "");
+        server.login(c1, "");
         server.subscribe(c1, "topic1");
         server.publish(c1, "msg1", c1.getCMsg("msg1"), "/topic1");
         server.logout(c1);
         
-        server.register(c2);
-        server.login(c2);
+        server.register(c2, "");
+        server.login(c2, "");
         server.subscribe(c2, "topic1");
         server.publish(c2, "msg2", c2.getCMsg("msg2"), "/topic1");
         
-        server.login(c1);
+        server.login(c1, "");
         
         while (true) {
         	//TODO: implement UI

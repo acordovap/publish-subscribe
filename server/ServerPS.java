@@ -45,13 +45,13 @@ public class ServerPS implements IServerPS, Runnable{
 	}
 
 	@Override
-	public boolean register(IClientPS c) throws RemoteException {
-		return lps.registerClt(c);
+	public boolean register(IClientPS c, String s) throws RemoteException {
+		return lps.registerClt(c, s);
 	}
 
 	@Override
-	public boolean login(IClientPS c) throws RemoteException {
-		return lps.loginClt(c);
+	public boolean login(IClientPS c, String s) throws RemoteException {
+		return lps.loginClt(c, s);
 	}
 	
 	@Override

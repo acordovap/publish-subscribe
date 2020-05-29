@@ -43,9 +43,9 @@ public class LogicPS implements Runnable {
 		cipher = Cipher.getInstance(IServerPS.ALG);
 	}
 	
-	public boolean loginClt(IClientPS c) throws RemoteException {
+	public boolean loginClt(IClientPS c, String s) throws RemoteException {
 		synchronized (registeredClts) {
-			if (registeredClts.containsKey(c.getUuid()) && registeredClts.get(c.getUuid()).equals("") ) { //change "" for hashed password
+			if (registeredClts.containsKey(c.getUuid()) && registeredClts.get(c.getUuid()).equals(s) ) { 
 				synchronized (activeClts) {
 					activeClts.put(c.getUuid(), c);
 					Log.getLogger().info((LogicPS.class.getName() + "\t- client with UUID: " + c.getUuid() + "\tlogged in"));
@@ -152,16 +152,16 @@ public class LogicPS implements Runnable {
 		}
 	}
 	
-	private void notifyOnSubscribe(IClientPS c, String tn) throws RemoteException { //checar con Toño
+	private void notifyOnSubscribe(IClientPS c, String tn) throws RemoteException {
 		for (Publication p: topics.get(tn).getPubs()) {
 			c.notify(p, tn);
 		}
 	}
 	
-	public boolean registerClt(IClientPS c) throws RemoteException {
+	public boolean registerClt(IClientPS c, String s) throws RemoteException {
 		synchronized (registeredClts) {
 			if (!registeredClts.containsKey(c.getUuid())) {
-				registeredClts.put(c.getUuid(), ""); // change "" for hashed password
+				registeredClts.put(c.getUuid(), s);
 				Log.getLogger().info((LogicPS.class.getName() + "\t- client with UUID: " + c.getUuid() + "\tregistered"));
 				synchronized (lastUpdate) {
 					lastUpdate.put(c.getUuid(), (long) 0);

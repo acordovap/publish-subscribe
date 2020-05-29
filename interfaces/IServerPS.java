@@ -15,7 +15,7 @@ public interface IServerPS extends java.rmi.Remote {
     void publish(IClientPS c, String msg, SealedObject cmsg, String tn) throws RemoteException, InvalidKeyException, UnsupportedEncodingException, IllegalBlockSizeException, BadPaddingException, ClassNotFoundException, IOException;
     void subscribe(IClientPS c, String tn) throws RemoteException;
     void unsubscribe(IClientPS c, String tn) throws RemoteException;
-    boolean login(IClientPS c) throws RemoteException;
+    boolean login(IClientPS c, String s) throws RemoteException;
     boolean logout(IClientPS c) throws RemoteException;
-    boolean register(IClientPS c) throws RemoteException;
+    boolean register(IClientPS c, String s) throws RemoteException;
 }

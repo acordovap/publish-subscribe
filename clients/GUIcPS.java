@@ -31,8 +31,13 @@ public class GUIcPS extends javax.swing.JFrame {
 	private static final long serialVersionUID = 7408963987148694415L;
 	
 	private CPS c;
-	String saddress = "127.0.0.1"; // server's IP address
-    IServerPS server; 
+	static String saddress = "127.0.0.1"; // server's IP address
+
+	public static void setSaddress(String saddress) {
+		GUIcPS.saddress = saddress;
+	}
+
+	IServerPS server; 
 	
 	public GUIcPS() {
         initComponents();
@@ -335,8 +340,8 @@ public class GUIcPS extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_jtxtUserActionPerformed
 
-    private void jbtnLoginActionPerformed(java.awt.event.ActionEvent evt) throws RemoteException, NotBoundException, NoSuchAlgorithmException, NoSuchPaddingException {//GEN-FIRST:event_jbtnLoginActionPerformed
-        if(jbtnLogin.getText().equals("login")) {
+    private void jbtnLoginActionPerformed(java.awt.event.ActionEvent evt) throws RemoteException, NotBoundException, NoSuchAlgorithmException, NoSuchPaddingException {//GEN-FIRST:event_jbtnLoginActionPerformed    	
+    	if(jbtnLogin.getText().equals("login")) {
         	if (jtxtUser.getText().equals("")) {
         		c = new CPS();
         	}
@@ -344,14 +349,14 @@ public class GUIcPS extends javax.swing.JFrame {
         		c = new CPS(UUID.fromString(jtxtUser.getText()));
         	}
         	server = (IServerPS) LocateRegistry.getRegistry(saddress).lookup( ServerPS.class.getName());
-        	if (server.register(c)) {
-        		boolean f = server.login(c);
+        	if (server.register(c, String.valueOf(jpsswP.getPassword()))) {
+        		boolean f = server.login(c,  String.valueOf(jpsswP.getPassword()));
         		if(f) {
         			loginLogoutComponents(f);
         		}
         	}
         	else {
-        		boolean f = server.login(c);
+        		boolean f = server.login(c,  String.valueOf(jpsswP.getPassword()));
         		if(f) {
         			loginLogoutComponents(f);
         		}
@@ -362,8 +367,6 @@ public class GUIcPS extends javax.swing.JFrame {
         	boolean f = server.logout(c);
         	loginLogoutComponents(f);
         }
-            
-            
     }//GEN-LAST:event_jbtnLoginActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
@@ -407,6 +410,8 @@ public class GUIcPS extends javax.swing.JFrame {
     }//GEN-LAST:event_jtxtToSUFocusGained
 
     public static void main(String args[]) {
+    	if(args.length > 0)
+    		setSaddress(args[0]);
         try {
             for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
